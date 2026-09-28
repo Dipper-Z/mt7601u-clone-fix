@@ -1,0 +1,29 @@
+--- a/drivers/net/wireless/mediatek/mt7601u/mcu.c
++++ b/drivers/net/wireless/mediatek/mt7601u/mcu.c
+@@ -17,6 +17,14 @@
+ #include "usb.h"
+ #include "trace.h"
+ 
++/* Buggy MT7601U clone dongles stop responding to all vendor requests after
++ * MT_VEND_DEV_MODE_RESET. Skip it (default) for compatibility; set to true
++ * for original Ralink hardware if needed.
++ */
++static bool fw_vnd_reset;
++module_param(fw_vnd_reset, bool, 0644);
++MODULE_PARM_DESC(fw_vnd_reset, "Perform vendor reset before FW load (hangs buggy MT7601U clones)");
++
+ #define MCU_FW_URB_MAX_PAYLOAD		0x3800
+ #define MCU_FW_URB_SIZE			(MCU_FW_URB_MAX_PAYLOAD + 12)
+ #define MCU_RESP_URB_SIZE		1024
+@@ -446,8 +454,9 @@
+ 	mt7601u_wr(dev, 0x94c, 0);
+ 	mt7601u_wr(dev, MT_FCE_PSE_CTRL, 0);
+ 
+-	mt7601u_vendor_reset(dev);
+-	msleep(5);
++	if (fw_vnd_reset)
++		mt7601u_vendor_reset(dev);
++	msleep(100);
+ 
+ 	mt7601u_wr(dev, 0xa44, 0);
+ 	mt7601u_wr(dev, 0x230, 0x84210);
